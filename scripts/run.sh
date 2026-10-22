@@ -20,25 +20,25 @@ fi
 
 devices=$(xcrun simctl list devices available)
 if [[ -n "${SIMULATOR:-}" ]]; then
-  line=$(grep -F "    $SIMULATOR (" <<<"$devices" | tail -1 || true)
+  line=$(grep -F "    ${SIMULATOR} (" <<<"${devices}" | tail -1 || true)
 else
   # The newest iOS runtime is listed last; prefer a Pro model.
-  line=$(grep -E '^ +iPhone .*Pro \(' <<<"$devices" | tail -1 || true)
-  [[ -z "$line" ]] && line=$(grep -E '^ +iPhone ' <<<"$devices" | tail -1 || true)
+  line=$(grep -E '^ +iPhone .*Pro \(' <<<"${devices}" | tail -1 || true)
+  [[ -z "${line}" ]] && line=$(grep -E '^ +iPhone ' <<<"${devices}" | tail -1 || true)
 fi
-udid=$(grep -oE "$UUID_PATTERN" <<<"$line" | head -1 || true)
-if [[ -z "$udid" ]]; then
+udid=$(grep -oE "${UUID_PATTERN}" <<<"${line}" | head -1 || true)
+if [[ -z "${udid}" ]]; then
   echo "No iPhone simulator found. In Xcode, open Settings > Components and add an iOS simulator." >&2
   exit 1
 fi
-name=$(sed -E "s/ \($UUID_PATTERN\).*//; s/^ +//" <<<"$line")
+name=$(sed -E "s/ \(${UUID_PATTERN}\).*//; s/^ +//" <<<"${line}")
 
-echo "Building Retro Phone for $name…"
-xcrun simctl boot "$udid" 2>/dev/null || true
-open -a Simulator --args -CurrentDeviceUDID "$udid"
-xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
-  -destination "id=$udid" -derivedDataPath "$DERIVED_DATA" -quiet build
+echo "Building Retro Phone for ${name}..."
+xcrun simctl boot "${udid}" 2>/dev/null || true
+open -a Simulator --args -CurrentDeviceUDID "${udid}"
+xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -configuration Debug \
+  -destination "id=${udid}" -derivedDataPath "${DERIVED_DATA}" -quiet build
 
-xcrun simctl install "$udid" "$DERIVED_DATA/Build/Products/Debug-iphonesimulator/RetroPhone.app"
-xcrun simctl launch "$udid" "$BUNDLE_ID" >/dev/null
-echo "Retro Phone is running on $name."
+xcrun simctl install "${udid}" "${DERIVED_DATA}/Build/Products/Debug-iphonesimulator/RetroPhone.app"
+xcrun simctl launch "${udid}" "${BUNDLE_ID}" >/dev/null
+echo "Retro Phone is running on ${name}."
