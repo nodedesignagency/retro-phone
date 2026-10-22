@@ -14,18 +14,20 @@ struct DialerScreen: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let dialSize = max(min(proxy.size.width - 32, proxy.size.height - 290, 420), 200)
+            // The artwork has a transparent margin round the wheel, so it may run
+            // a touch wider than the screen.
+            let dialSize = max(min(proxy.size.width + 10, proxy.size.height - 250, 450), 220)
             VStack(spacing: 0) {
                 NumberDisplay(model: model)
-                    .padding(.top, 28)
+                    .padding(.top, 44)
                     .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : -12)
-                Spacer(minLength: 16)
+                    .offset(y: appeared ? 0 : -8)
+                Spacer(minLength: 8)
                 RotaryDialView(engine: engine)
                     .frame(width: dialSize, height: dialSize)
-                    .scaleEffect(appeared ? 1 : 0.88)
+                    .scaleEffect(appeared ? 1 : 0.94)
                     .opacity(appeared ? 1 : 0)
-                Spacer(minLength: 16)
+                Spacer(minLength: 8)
                 DialerControls(
                     hasDigits: !model.isEmpty,
                     refusals: refusals,
@@ -91,16 +93,20 @@ struct DialerScreen: View {
     }
 }
 
-/// Near-black with a faint pool of light where the dial sits.
+/// Black, with a soft studio light falling from above onto the dial.
 private struct Backdrop: View {
     var body: some View {
         ZStack {
             Color.black
             RadialGradient(
-                colors: [Color(white: 0.11), Color(white: 0.03), .black],
-                center: UnitPoint(x: 0.5, y: 0.55),
+                stops: [
+                    .init(color: .white.opacity(0.19), location: 0),
+                    .init(color: .white.opacity(0.075), location: 0.4),
+                    .init(color: .white.opacity(0), location: 1),
+                ],
+                center: UnitPoint(x: 0.5, y: 0.22),
                 startRadius: 0,
-                endRadius: 520
+                endRadius: 460
             )
         }
         .ignoresSafeArea()

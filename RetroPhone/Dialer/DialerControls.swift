@@ -19,13 +19,13 @@ struct DialerControls: View {
             ZStack {
                 if hasDigits {
                     DeleteButton(onDelete: onDelete, onClear: onClear)
-                        .transition(.scale(scale: 0.5).combined(with: .opacity))
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity)
         }
-        .frame(height: 88)
-        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: hasDigits)
+        .frame(height: 80)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: hasDigits)
     }
 }
 
@@ -35,11 +35,10 @@ private struct CallButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "phone.fill")
-                .font(.system(size: 30, weight: .medium))
+                .font(.system(size: 31, weight: .regular))
                 .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
-                .frame(width: 80, height: 80)
-                .background { GlassOrb(tint: Palette.callGreen, diameter: 80) }
+                .frame(width: 76, height: 76)
+                .background(Palette.callGreen, in: Circle())
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel("Call")
@@ -53,10 +52,10 @@ private struct DeleteButton: View {
     var body: some View {
         Button(action: onDelete) {
             Image(systemName: "delete.left.fill")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(Palette.chromeText)
-                .frame(width: 58, height: 58)
-                .background { GlassOrb(tint: nil, diameter: 58) }
+                .font(.system(size: 25, weight: .regular))
+                .foregroundStyle(Palette.secondary)
+                .frame(width: 76, height: 76)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressableButtonStyle())
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in onClear() })

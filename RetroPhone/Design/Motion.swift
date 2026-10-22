@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Springy press for glass buttons: a quick squeeze that brightens under the finger.
+/// Springy press for the keypad's buttons: a quick squeeze that brightens under the finger.
 struct PressableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .brightness(configuration.isPressed ? 0.08 : 0)
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .brightness(configuration.isPressed ? 0.1 : 0)
             .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }

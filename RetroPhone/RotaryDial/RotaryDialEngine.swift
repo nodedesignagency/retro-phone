@@ -29,8 +29,8 @@ final class RotaryDialEngine {
     /// Skips the wheel animation for tap-to-dial.
     @ObservationIgnored var reduceMotion = false
 
-    /// Return speed in degrees per second: ten pulses a second, like a real governor.
-    private static let governorSpeed = 340.0
+    /// Return speed in degrees per second: about eleven pulses a second, like a real governor.
+    private static let governorSpeed = 290.0
     private static let launchAcceleration = 5_200.0
     /// How close to the stop a release still counts as dialled.
     private static let stopTolerance = 6.0
@@ -70,7 +70,7 @@ final class RotaryDialEngine {
     @ObservationIgnored private var pulses = 0
     @ObservationIgnored private var returnDistance = 0.0
 
-    init(geometry: DialGeometry = DialGeometry(), feedback: DialFeedback? = nil) {
+    init(geometry: DialGeometry = .chromeGPO, feedback: DialFeedback? = nil) {
         self.geometry = geometry
         self.feedback = feedback ?? DialFeedback()
         ticker = FrameTicker { [weak self] dt in self?.advance(by: dt) }
