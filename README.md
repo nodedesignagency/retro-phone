@@ -23,9 +23,7 @@ Or open `RetroPhone.xcodeproj` in Xcode, pick a simulator or your phone, and
 press Run. For a real device, choose your team under *Signing & Capabilities*
 first.
 
-Requires iOS 17. On iOS 26 and later the boxes, the index window and the
-buttons are Liquid Glass; on iOS 17 and 18 they use a blurred material with
-a lit rim.
+Requires iOS 17. iPhone only, portrait.
 
 ## Using it
 
