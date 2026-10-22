@@ -7,10 +7,8 @@ import AVFoundation
 @MainActor
 final class ClickSynth {
     enum Sound: CaseIterable {
-        /// A digit clicking past the index.
-        case detent
-        /// A digit entered: a soft, rounder click.
-        case enter
+        /// A key going down: a short plastic click.
+        case key
     }
 
     private let engine = AVAudioEngine()
@@ -51,8 +49,7 @@ final class ClickSynth {
     private static func render(_ sound: Sound, format: AVAudioFormat) -> AVAudioPCMBuffer? {
         let sampleRate = format.sampleRate
         let duration: Double = switch sound {
-        case .detent: 0.035
-        case .enter: 0.09
+        case .key: 0.05
         }
         let frames = AVAudioFrameCount(duration * sampleRate)
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
@@ -68,13 +65,10 @@ final class ClickSynth {
             let t = Double(i) / sampleRate
             let noise = Double.random(in: -1...1, using: &random)
             let value: Double = switch sound {
-            case .detent:
-                0.10 * noise * decay(t, 0.0012)
-                    + 0.07 * tone(3_600, t) * decay(t, 0.004)
-            case .enter:
-                0.14 * noise * decay(t, 0.002)
-                    + 0.16 * tone(1_250, t) * decay(t, 0.016)
-                    + 0.20 * tone(170, t) * decay(t, 0.014)
+            case .key:
+                0.16 * noise * decay(t, 0.0015)
+                    + 0.10 * tone(2_400, t) * decay(t, 0.005)
+                    + 0.14 * tone(210, t) * decay(t, 0.009)
             }
             samples[i] = Float(value)
         }

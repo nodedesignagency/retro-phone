@@ -1,124 +1,262 @@
 import SwiftUI
 
+/// The whole screen is the device face: a grid of square tiles holding a
+/// speaker grille, the mono screen, the orange call button, and the keys.
 struct DialerScreen: View {
-    let engine: ModeDialEngine
-
     @State private var model = DialerModel()
-    @State private var appeared = false
-    @State private var deletions = 0
-    @State private var refusals = 0
-    @State private var calls = 0
+    @State private var message: String?
+    @State private var messageID = 0
+    @State private var errors = 0
 
     @Environment(\.openURL) private var openURL
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let gap: CGFloat = 3
+    private let keyRows: [[Character]] = [["1", "2", "3", "4"], ["5", "6", "7", "8"], ["9", "0", "*", "#"]]
 
     var body: some View {
         GeometryReader { proxy in
-            let dialWidth = min(proxy.size.width - 24, 400)
-            VStack(spacing: 0) {
-                NumberBoxes(model: model)
-                    .padding(.top, 36)
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : -8)
-
-                Text("Spin the dial, or tap a digit")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.4))
-                    .padding(.top, 16)
-                    .opacity(model.isEmpty && appeared ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.3), value: model.isEmpty)
-                    .accessibilityHidden(!model.isEmpty)
-
+            let side = min(floor((proxy.size.width - 24 - gap * 3) / 4), 96)
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: 8)
+                grid(side: side)
                 Spacer(minLength: 12)
-
-                ModeDialView(engine: engine, width: dialWidth)
-                    .opacity(appeared ? 1 : 0)
-                    .scaleEffect(appeared ? 1 : 0.96)
-
-                Spacer(minLength: 12)
-
-                DialerControls(
-                    hasDigits: !model.isEmpty,
-                    refusals: refusals,
-                    onCall: call,
-                    onDelete: deleteLast,
-                    onClear: clearAll
-                )
-                .padding(.bottom, 14)
-                .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 12)
+                Wordmark()
+                    .padding(.leading, 12)
+                Spacer(minLength: 8)
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
+            .frame(width: proxy.size.width)
         }
-        .background { Backdrop() }
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.6), trigger: deletions)
-        .sensoryFeedback(.impact(weight: .medium), trigger: calls)
-        .sensoryFeedback(.error, trigger: refusals)
-        .onAppear {
-            engine.reduceMotion = reduceMotion
-            engine.onEnter = { [model] digit in
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { model.append(digit) }
+        .background(Palette.body.ignoresSafeArea())
+        .sensoryFeedback(.error, trigger: errors)
+    }
+
+    private var status: String {
+        message ?? (model.isEmpty ? "READY" : "DIAL")
+    }
+
+    // MARK: - Layout
+
+    private func grid(side: CGFloat) -> some View {
+        let keySize = side * 62 / 90
+        return VStack(spacing: gap) {
+            HStack(spacing: gap) {
+                Tile { Grille() }
+                    .frame(width: side, height: side * 2 + gap)
+                ScreenTile(model: model, status: status)
+                    .frame(width: side * 3 + gap * 2, height: side * 2 + gap)
             }
-            withAnimation(.spring(duration: 0.8, bounce: 0.15)) { appeared = true }
-        }
-        .onChange(of: reduceMotion) { _, newValue in
-            engine.reduceMotion = newValue
+
+            HStack(spacing: gap) {
+                Tile {
+                    ZStack(alignment: .bottom) {
+                        Button(action: call) { EmptyView() }
+                            .buttonStyle(OrangeKeyStyle(diameter: side * 58 / 90))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .offset(y: -4)
+                            .accessibilityLabel("Call")
+                        MicroLabel("CALL")
+                            .padding(.bottom, 6)
+                    }
+                }
+                .frame(width: side, height: side)
+
+                Tile {
+                    Button("DELETE", action: deleteLast)
+                        .buttonStyle(PillKeyStyle())
+                        .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in clearAll() })
+                        .padding(.horizontal, 8)
+                        .accessibilityHint("Touch and hold to clear the number")
+                }
+                .frame(width: side, height: side)
+
+                Tile {
+                    Button("CLEAR", action: clearAll)
+                        .buttonStyle(PillKeyStyle())
+                        .padding(.horizontal, 8)
+                }
+                .frame(width: side, height: side)
+
+                Tile {
+                    Button { press("+") } label: { KeyLabel(key: "+") }
+                        .buttonStyle(RoundKeyStyle(diameter: keySize, showsLED: false))
+                        .accessibilityLabel("Plus")
+                }
+                .frame(width: side, height: side)
+            }
+
+            ForEach(keyRows.indices, id: \.self) { row in
+                HStack(spacing: gap) {
+                    ForEach(keyRows[row], id: \.self) { key in
+                        Tile {
+                            ZStack(alignment: .leading) {
+                                Button { press(key) } label: { KeyLabel(key: key) }
+                                    .buttonStyle(RoundKeyStyle(diameter: keySize))
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .accessibilityLabel(Self.spokenName(of: key))
+                                if row == 0, key == "1" {
+                                    SideLabel(text: "KEYS")
+                                        .frame(width: 12)
+                                        .padding(.leading, 2)
+                                }
+                            }
+                        }
+                        .frame(width: side, height: side)
+                    }
+                }
+            }
+
+            HStack(spacing: gap) {
+                ForEach(0..<DialerModel.speedDialCount, id: \.self) { slot in
+                    Tile(color: Palette.gradientTiles[slot]) {
+                        ZStack(alignment: .bottom) {
+                            Button { recallSpeedDial(slot) } label: { EmptyView() }
+                                .buttonStyle(KnobStyle(
+                                    tone: Palette.gradientKnobs[slot],
+                                    index: slot,
+                                    isStored: model.speedDials[slot] != nil,
+                                    diameter: side * 58 / 90
+                                ))
+                                .simultaneousGesture(LongPressGesture(minimumDuration: 0.6).onEnded { _ in saveSpeedDial(slot) })
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .offset(y: -3)
+                                .accessibilityLabel("Speed dial \(slot + 1)")
+                                .accessibilityHint("Touch and hold to save the current number here")
+                            MicroLabel("S\(slot + 1)", color: slot > 1 ? Color(hex: 0x555555) : Color(hex: 0x6A6A6A))
+                                .padding(.bottom, 5)
+                        }
+                    }
+                    .frame(width: side, height: side)
+                }
+            }
         }
     }
 
-    private func call() {
-        guard let url = model.callURL else {
-            if model.lastDialed != nil {
-                withAnimation(.snappy) { _ = model.recallLastDialed() }
-            } else {
-                refuse()
-            }
-            return
-        }
-        calls += 1
-        openURL(url) { accepted in
-            if accepted {
-                model.noteCallPlaced()
-            } else {
-                refuse()
-            }
-        }
-    }
+    // MARK: - Actions
 
-    private func refuse() {
-        withAnimation(.linear(duration: 0.4)) { refusals += 1 }
+    private func press(_ key: Character) {
+        model.append(key)
     }
 
     private func deleteLast() {
-        guard !model.isEmpty else { return }
-        withAnimation(.snappy(duration: 0.25)) { model.deleteLast() }
-        deletions += 1
+        model.deleteLast()
     }
 
     private func clearAll() {
         guard !model.isEmpty else { return }
-        withAnimation(.smooth(duration: 0.35)) { model.clear() }
-        deletions += 1
+        model.clear()
+        show("CLEARED")
+    }
+
+    private func call() {
+        guard let url = model.callURL else {
+            if model.recallLastDialed() {
+                show("LAST NUMBER")
+            } else {
+                show("NO NUMBER")
+                errors += 1
+            }
+            return
+        }
+        show("CALLING")
+        openURL(url) { accepted in
+            if accepted {
+                model.noteCallPlaced()
+            } else {
+                show("NO SERVICE")
+                errors += 1
+            }
+        }
+    }
+
+    private func recallSpeedDial(_ slot: Int) {
+        if model.recallSpeedDial(slot) {
+            show("S\(slot + 1)")
+        } else if model.speedDials[slot] == nil {
+            show("S\(slot + 1) EMPTY")
+        }
+    }
+
+    private func saveSpeedDial(_ slot: Int) {
+        if model.saveSpeedDial(slot) {
+            show("SAVED S\(slot + 1)")
+        } else {
+            show("NO NUMBER")
+            errors += 1
+        }
+    }
+
+    /// Shows a short message on the screen's status line, then reverts.
+    private func show(_ text: String) {
+        messageID += 1
+        let id = messageID
+        message = text
+        Task {
+            try? await Task.sleep(for: .milliseconds(1600))
+            if messageID == id { message = nil }
+        }
+    }
+
+    private static func spokenName(of key: Character) -> String {
+        switch key {
+        case "*": "Star"
+        case "#": "Pound"
+        default: String(key)
+        }
     }
 }
 
-/// Black, with the faintest pool of light where the dial sits.
-private struct Backdrop: View {
+/// A key cap's legend.
+private struct KeyLabel: View {
+    let key: Character
+
     var body: some View {
-        ZStack {
-            Color.black
-            RadialGradient(
-                colors: [.white.opacity(0.07), .white.opacity(0)],
-                center: UnitPoint(x: 0.5, y: 0.62),
-                startRadius: 0,
-                endRadius: 360
-            )
+        Group {
+            if key == "*" {
+                Image(systemName: "asterisk")
+                    .font(.system(size: 17, weight: .medium))
+            } else {
+                Text(String(key))
+                    .font(.system(size: key == "+" ? 23 : 21, weight: .light))
+            }
         }
-        .ignoresSafeArea()
+        .foregroundStyle(Palette.ink)
+    }
+}
+
+/// The tiny caps labels printed on tiles.
+private struct MicroLabel: View {
+    let text: String
+    var color: Color = Palette.microLabel
+
+    init(_ text: String, color: Color = Palette.microLabel) {
+        self.text = text
+        self.color = color
+    }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 7, weight: .semibold))
+            .tracking(1.4)
+            .foregroundStyle(color)
+            .accessibilityHidden(true)
+    }
+}
+
+/// The two-line lowercase wordmark under the device.
+private struct Wordmark: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: -3) {
+            Text("retro")
+            Text("phone")
+        }
+        .font(.system(size: 15, weight: .bold))
+        .tracking(-0.4)
+        .foregroundStyle(Palette.ink)
+        .accessibilityHidden(true)
     }
 }
 
 #Preview {
-    DialerScreen(engine: ModeDialEngine())
+    DialerScreen()
         .preferredColorScheme(.dark)
 }

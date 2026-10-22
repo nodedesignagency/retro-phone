@@ -1,8 +1,9 @@
 # Retro Phone
 
-An iPhone dialer whose keypad is a camera-style mode dial: a semicircle of
-hairline ticks, a ring of digits that spins under an amber index, and glass
-surfaces throughout. Black, minimal, Apple's keypad layout.
+An iPhone dialer built as a piece of hardware: a matte black face divided
+into square tiles, with a speaker grille, a black mono screen, round keys
+sunk into collars, an orange call button and a row of grey-to-white
+speed-dial knobs.
 
 v1, the photographic chrome rotary dial, is kept on the `v1` branch.
 
@@ -26,29 +27,27 @@ Requires iOS 17. On iOS 26 and later the boxes, the index window and the
 buttons are Liquid Glass; on iOS 17 and 18 they use a blurred material with
 a lit rim.
 
-## Using the dial
+## Using it
 
-- **Spin:** drag the ring. Each digit clicks as it passes the index; flick it
-  and it coasts a few digits and settles. Let go after a turn and the digit
-  under the index is entered.
-- **Tap:** tap any digit and the ring spins it to the index and enters it.
-  Tap the digit already under the index to enter it again.
-- **Call:** the green button places the call. With nothing dialled it brings
-  back the last number you called, like the iPhone keypad.
-- **Delete:** tap to remove a digit, touch and hold to clear.
-- **Copy/paste:** touch and hold the number boxes.
+- **Keys:** `1 2 3 4` / `5 6 7 8` / `9 0 * #`, plus `+` for international
+  numbers. Each key clicks and its LED lights while it's down.
+- **Screen:** the number fills `000 000 0000`; status messages appear on the
+  top line. Touch and hold the screen to copy or paste.
+- **Call:** the orange button. With nothing dialled it brings back the last
+  number you called.
+- **Delete / Clear:** tap DELETE to remove a digit (hold to clear), or tap
+  CLEAR.
+- **Speed dials S1–S4:** touch and hold a knob to save the current number;
+  tap it to bring the number back. A lit LED means the slot is in use.
 
 ## Layout
 
 ```
 RetroPhone/
   App/          app entry point
-  Dialer/       screen, number boxes, call/delete controls, model, formatter
-  ModeDial/     geometry, engine (spin physics, detents, queue), the dial view
-  Feedback/     Core Haptics and synthesised clicks
-  Design/       glass material, palette, button press style, shake effect
+  Dialer/       the screen layout, model (number, speed dials), formatter
+  Device/       tiles, keys, pills, knobs, grille, the mono screen
+  Feedback/     Core Haptics and the synthesised key click
+  Design/       palette, shake effect
 Config/Info.plist  enables 120 Hz on iPhone (merged with the generated plist)
 ```
-
-`ModeDialGeometry` and `ModeDialEngine` are plain Swift with no UI
-dependencies, so the dial's mechanics can be exercised without a simulator.
