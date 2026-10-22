@@ -6,9 +6,19 @@ number in SF Pro and the green call button.
 
 ## Run it
 
-1. Open `RetroPhone.xcodeproj` in Xcode 16 or later.
-2. Pick an iPhone simulator or your phone and press Run.
-   For a real device, choose your team under *Signing & Capabilities* first.
+From Terminal, with Xcode 16 or later installed:
+
+```sh
+./scripts/run.sh                            # newest iPhone simulator
+SIMULATOR="iPhone 16 Pro" ./scripts/run.sh  # or pick one by name
+```
+
+It builds the app, boots the simulator and launches Retro Phone. Build
+errors are printed in the Terminal.
+
+Or open `RetroPhone.xcodeproj` in Xcode, pick a simulator or your phone, and
+press Run. For a real device, choose your team under *Signing & Capabilities*
+first.
 
 Requires iOS 17. iPhone only, portrait.
 
