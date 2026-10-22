@@ -10,19 +10,17 @@ struct DialerControls: View {
     let onClear: () -> Void
 
     var body: some View {
-        HStack(spacing: 0) {
-            Color.clear
-                .frame(maxWidth: .infinity)
+        ZStack {
             CallButton(action: onCall)
                 .modifier(ShakeEffect(shakes: CGFloat(refusals)))
-                .frame(maxWidth: .infinity)
-            ZStack {
+            HStack {
+                Spacer()
                 if hasDigits {
                     DeleteButton(onDelete: onDelete, onClear: onClear)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
             }
-            .frame(maxWidth: .infinity)
+            .padding(.trailing, 36)
         }
         .frame(height: 80)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: hasDigits)
@@ -35,10 +33,10 @@ private struct CallButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "phone.fill")
-                .font(.system(size: 31, weight: .regular))
+                .font(.system(size: 30, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 76, height: 76)
-                .background(Palette.callGreen, in: Circle())
+                .glass(Circle(), tint: Palette.callGreen, interactive: true)
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel("Call")
@@ -52,10 +50,10 @@ private struct DeleteButton: View {
     var body: some View {
         Button(action: onDelete) {
             Image(systemName: "delete.left.fill")
-                .font(.system(size: 25, weight: .regular))
-                .foregroundStyle(Palette.secondary)
-                .frame(width: 76, height: 76)
-                .contentShape(Rectangle())
+                .font(.system(size: 22, weight: .regular))
+                .foregroundStyle(.white.opacity(0.85))
+                .frame(width: 56, height: 56)
+                .glass(Circle(), interactive: true)
         }
         .buttonStyle(PressableButtonStyle())
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in onClear() })

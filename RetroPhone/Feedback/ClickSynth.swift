@@ -7,14 +7,10 @@ import AVFoundation
 @MainActor
 final class ClickSynth {
     enum Sound: CaseIterable {
-        /// Light ratchet tick while the wheel is pulled round.
+        /// A digit clicking past the index.
         case detent
-        /// Governor pulse while the wheel runs home.
-        case pulse
-        /// Finger meets the metal stop.
-        case stop
-        /// Wheel lands back at rest.
-        case land
+        /// A digit entered: a soft, rounder click.
+        case enter
     }
 
     private let engine = AVAudioEngine()
@@ -55,10 +51,8 @@ final class ClickSynth {
     private static func render(_ sound: Sound, format: AVAudioFormat) -> AVAudioPCMBuffer? {
         let sampleRate = format.sampleRate
         let duration: Double = switch sound {
-        case .detent: 0.03
-        case .pulse: 0.05
-        case .stop: 0.16
-        case .land: 0.12
+        case .detent: 0.035
+        case .enter: 0.09
         }
         let frames = AVAudioFrameCount(duration * sampleRate)
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
@@ -75,21 +69,12 @@ final class ClickSynth {
             let noise = Double.random(in: -1...1, using: &random)
             let value: Double = switch sound {
             case .detent:
-                0.08 * noise * decay(t, 0.0010)
-                    + 0.06 * tone(4_200, t) * decay(t, 0.003)
-            case .pulse:
-                0.20 * noise * decay(t, 0.0016)
-                    + 0.15 * tone(2_650, t) * decay(t, 0.005)
-                    + 0.20 * tone(190, t) * decay(t, 0.008)
-            case .stop:
-                0.24 * noise * decay(t, 0.002)
-                    + 0.13 * tone(1_480, t) * decay(t, 0.035)
-                    + 0.08 * tone(3_910, t) * decay(t, 0.022)
-                    + 0.28 * tone(120, t) * decay(t, 0.018)
-            case .land:
-                0.16 * noise * decay(t, 0.0025)
-                    + 0.32 * tone(95, t) * decay(t, 0.022)
-                    + 0.05 * tone(2_300, t) * decay(t, 0.010)
+                0.10 * noise * decay(t, 0.0012)
+                    + 0.07 * tone(3_600, t) * decay(t, 0.004)
+            case .enter:
+                0.14 * noise * decay(t, 0.002)
+                    + 0.16 * tone(1_250, t) * decay(t, 0.016)
+                    + 0.20 * tone(170, t) * decay(t, 0.014)
             }
             samples[i] = Float(value)
         }

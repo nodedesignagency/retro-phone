@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DialerScreen: View {
-    let engine: RotaryDialEngine
+    let engine: ModeDialEngine
 
     @State private var model = DialerModel()
     @State private var appeared = false
@@ -14,20 +14,29 @@ struct DialerScreen: View {
 
     var body: some View {
         GeometryReader { proxy in
-            // The artwork has a transparent margin round the wheel, so it may run
-            // a touch wider than the screen.
-            let dialSize = max(min(proxy.size.width + 10, proxy.size.height - 250, 450), 220)
+            let dialWidth = min(proxy.size.width - 24, 400)
             VStack(spacing: 0) {
-                NumberDisplay(model: model)
-                    .padding(.top, 44)
+                NumberBoxes(model: model)
+                    .padding(.top, 36)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : -8)
-                Spacer(minLength: 8)
-                RotaryDialView(engine: engine)
-                    .frame(width: dialSize, height: dialSize)
-                    .scaleEffect(appeared ? 1 : 0.94)
+
+                Text("Spin the dial, or tap a digit")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.4))
+                    .padding(.top, 16)
+                    .opacity(model.isEmpty && appeared ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: model.isEmpty)
+                    .accessibilityHidden(!model.isEmpty)
+
+                Spacer(minLength: 12)
+
+                ModeDialView(engine: engine, width: dialWidth)
                     .opacity(appeared ? 1 : 0)
-                Spacer(minLength: 8)
+                    .scaleEffect(appeared ? 1 : 0.96)
+
+                Spacer(minLength: 12)
+
                 DialerControls(
                     hasDigits: !model.isEmpty,
                     refusals: refusals,
@@ -35,9 +44,9 @@ struct DialerScreen: View {
                     onDelete: deleteLast,
                     onClear: clearAll
                 )
-                .padding(.bottom, 16)
+                .padding(.bottom, 14)
                 .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 16)
+                .offset(y: appeared ? 0 : 12)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
@@ -47,10 +56,10 @@ struct DialerScreen: View {
         .sensoryFeedback(.error, trigger: refusals)
         .onAppear {
             engine.reduceMotion = reduceMotion
-            engine.onDial = { [model] digit in
-                withAnimation(.snappy(duration: 0.3)) { model.append(digit) }
+            engine.onEnter = { [model] digit in
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { model.append(digit) }
             }
-            withAnimation(.spring(duration: 0.9, bounce: 0.22)) { appeared = true }
+            withAnimation(.spring(duration: 0.8, bounce: 0.15)) { appeared = true }
         }
         .onChange(of: reduceMotion) { _, newValue in
             engine.reduceMotion = newValue
@@ -93,20 +102,16 @@ struct DialerScreen: View {
     }
 }
 
-/// Black, with a soft studio light falling from above onto the dial.
+/// Black, with the faintest pool of light where the dial sits.
 private struct Backdrop: View {
     var body: some View {
         ZStack {
             Color.black
             RadialGradient(
-                stops: [
-                    .init(color: .white.opacity(0.19), location: 0),
-                    .init(color: .white.opacity(0.075), location: 0.4),
-                    .init(color: .white.opacity(0), location: 1),
-                ],
-                center: UnitPoint(x: 0.5, y: 0.22),
+                colors: [.white.opacity(0.07), .white.opacity(0)],
+                center: UnitPoint(x: 0.5, y: 0.62),
                 startRadius: 0,
-                endRadius: 460
+                endRadius: 360
             )
         }
         .ignoresSafeArea()
@@ -114,6 +119,6 @@ private struct Backdrop: View {
 }
 
 #Preview {
-    DialerScreen(engine: RotaryDialEngine())
+    DialerScreen(engine: ModeDialEngine())
         .preferredColorScheme(.dark)
 }
